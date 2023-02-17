@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Disable SELinux
+sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+
+# Set umask to 027
+echo "umask 027" >> /etc/bashrc
+echo "umask 027" >> /etc/profile
+
+# Disable core dumps
+echo "ulimit -c 0 > /dev/null 2>&1" >> /etc/profile
+
+# Enable firewall and block incoming traffic by default
+systemctl enable firewalld
+systemctl start firewalld
+firewall-cmd --set-default-zone=drop
+
+# Allow only SMTP and POP3 services
+firewall-cmd --permanent --add-service=smtp
+firewall-cmd --permanent --add-service=pop3
+firewall-cmd --reload
+
+# Install and enable fail2ban to prevent brute-force attacks
+dnf install -y epel-release
+dnf install -y fail2ban
+systemctl enable fail2ban
+systemctl start fail2ban
+
+# Set a password policy for users
+authconfig --passalgo=sha512 --passminlen=8 --passminclass=4 --passmaxrepeat=3 --passmaxclassrepeat=2 --enablereqlower --enablerequpper --enablecracklib --disablefingerprint --update
+
+# Disable root login and password authentication for ssh
+sed -i 's/#PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+# Reload sshd configuration
+systemctl reload sshd
+
