@@ -26,6 +26,13 @@ dnf install -y fail2ban
 systemctl enable fail2ban
 systemctl start fail2ban
 
+# Install and configure NTP to synchronize with a specific server
+dnf install -y ntp
+sed -i 's/^server.*/#&/g' /etc/ntp.conf
+echo "server 172.20.240.20 iburst" >> /etc/ntp.conf
+systemctl enable ntpd
+systemctl start ntpd
+
 # Set a password policy for users
 authconfig --passalgo=sha512 --passminlen=8 --passminclass=4 --passmaxrepeat=3 --passmaxclassrepeat=2 --enablereqlower --enablerequpper --enablecracklib --disablefingerprint --update
 
@@ -33,6 +40,13 @@ authconfig --passalgo=sha512 --passminlen=8 --passminclass=4 --passmaxrepeat=3 -
 sed -i 's/#PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
 
+# Disable sshd and ssh services
+systemctl stop sshd
+systemctl disable sshd
+systemctl stop ssh
+systemctl disable ssh
+
 # Reload sshd configuration
 systemctl reload sshd
+
 
